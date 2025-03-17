@@ -16,7 +16,7 @@ with open(file_path, 'r') as file:
     data = json.load(file)
 
 # Get the absolute path to the oculus_dk1_steamVR directory
-oculus_dk1_path = pathlib.Path("oculus-dk1-steamvr").resolve()
+oculus_dk1_path = pathlib.Path("oculus_dk1_steamVR").resolve()
 
 # Check if the 'external_drivers' key exists and initialize it if necessary
 if 'external_drivers' not in data or data['external_drivers'] is None:

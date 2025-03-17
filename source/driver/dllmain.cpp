@@ -49,9 +49,9 @@ class MyWatchdogProvider : public IVRWatchdogProvider {
 MyServerTrackedDeviceProvider device_provider;
 MyWatchdogProvider watchdog_provider;
 
+extern "C" __declspec(dllexport)
 void* HmdDriverFactory(const char* pInterfaceName, int* pReturnCode)
 {
-    while (1);
     if (0 == strcmp(IServerTrackedDeviceProvider_Version, pInterfaceName))
     {
         return &device_provider;

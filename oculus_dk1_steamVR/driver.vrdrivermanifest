@@ -1,5 +1,5 @@
 {
-	"alwaysActivate": false,
+	"alwaysActivate": true,
 	"name" : "oculus_dk1_steamVR",
 	"directory" : "",
 	"resourceOnly" : false,
