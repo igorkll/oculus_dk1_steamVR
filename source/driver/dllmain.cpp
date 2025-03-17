@@ -82,7 +82,7 @@ class HeadDisplay : public ITrackedDeviceServerDriver {
     }
 
     void EnterStandby() {
-
+        
     }
 
     void* GetComponent(const char* pchComponentNameAndVersion) {
