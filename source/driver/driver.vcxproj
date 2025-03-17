@@ -120,6 +120,9 @@
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>../openvr/openvr_api.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /Y "$(SolutionDir)x64\Release\driver.dll" "$(SolutionDir)../../oculus_dk1_steamVR\bin\win64\driver_oculus_dk1_steamVR.dll"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -141,6 +144,9 @@
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>../openvr/openvr_api.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /Y "$(SolutionDir)x64\Release\driver.dll" "$(SolutionDir)../../oculus_dk1_steamVR\bin\win64\driver_oculus_dk1_steamVR.dll"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
