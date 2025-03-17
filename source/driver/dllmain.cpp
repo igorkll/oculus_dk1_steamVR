@@ -4,13 +4,60 @@
 
 using namespace vr;
 
+#define VR_WIDTH 1280
+#define VR_HEIGHT 720
+
+class VRDisplay : public IVRDisplayComponent {
+    void GetWindowBounds(int32_t* pnX, int32_t* pnY, uint32_t* pnWidth, uint32_t* pnHeight) {
+
+    }
+
+    bool IsDisplayOnDesktop() {
+        return false;
+    }
+
+    bool IsDisplayRealDisplay() {
+        return true;
+    }
+
+    void GetRecommendedRenderTargetSize(uint32_t* pnWidth, uint32_t* pnHeight) {
+        *pnWidth = VR_WIDTH;
+        *pnHeight = VR_HEIGHT;
+    }
+
+    void GetEyeOutputViewport(EVREye eEye, uint32_t* pnX, uint32_t* pnY, uint32_t* pnWidth, uint32_t* pnHeight) {
+        *pnY = 0;
+        *pnWidth = VR_WIDTH / 2;
+        *pnHeight = VR_HEIGHT;
+
+        if (eEye == Eye_Left)
+        {
+            *pnX = 0;
+        }
+        else
+        {
+            *pnX = VR_WIDTH / 2;
+        }
+    }
+    
+    void GetProjectionRaw(EVREye eEye, float* pfLeft, float* pfRight, float* pfTop, float* pfBottom) {
+        *pfLeft = -1.0f;
+        *pfRight = 1.0f;
+        *pfTop = -1.0f;
+        *pfBottom = 1.0f;
+    }
+};
+
 class HeadDisplay : public ITrackedDeviceServerDriver {
+    VRDisplay* vrDisplay;
+
     EVRInitError Activate(uint32_t unObjectId) {
+        vrDisplay = new VRDisplay();
         return VRInitError_None;
     }
 
     void Deactivate() {
-
+        delete vrDisplay;
     }
 
     void EnterStandby() {
@@ -19,7 +66,7 @@ class HeadDisplay : public ITrackedDeviceServerDriver {
 
     void* GetComponent(const char* pchComponentNameAndVersion) {
         if (!_stricmp(pchComponentNameAndVersion, vr::IVRVirtualDisplay_Version)) {
-            return NULL;
+            return vrDisplay;
         }
 
         if (!_stricmp(pchComponentNameAndVersion, vr::IVRCameraComponent_Version)) {
