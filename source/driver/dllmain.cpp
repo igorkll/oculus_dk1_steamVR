@@ -9,7 +9,10 @@ using namespace vr;
 
 class VRDisplay : public IVRDisplayComponent {
     void GetWindowBounds(int32_t* pnX, int32_t* pnY, uint32_t* pnWidth, uint32_t* pnHeight) {
-
+        *pnX = 0;
+        *pnY = 0;
+        *pnWidth = VR_WIDTH;
+        *pnHeight = VR_HEIGHT;
     }
 
     bool IsDisplayOnDesktop() {
@@ -45,6 +48,24 @@ class VRDisplay : public IVRDisplayComponent {
         *pfRight = 1.0f;
         *pfTop = -1.0f;
         *pfBottom = 1.0f;
+    }
+
+    DistortionCoordinates_t ComputeDistortion(EVREye eEye, float fU, float fV) {
+        DistortionCoordinates_t distortionCoordinates_t;
+        distortionCoordinates_t.rfRed[0] = 0;
+        distortionCoordinates_t.rfRed[1] = 1;
+
+        distortionCoordinates_t.rfGreen[0] = 0;
+        distortionCoordinates_t.rfGreen[1] = 1;
+
+        distortionCoordinates_t.rfBlue[0] = 0;
+        distortionCoordinates_t.rfBlue[1] = 1;
+
+        return distortionCoordinates_t;
+    }
+
+    bool ComputeInverseDistortion(HmdVector2_t* pResult, EVREye eEye, uint32_t unChannel, float fU, float fV) {
+        return false;
     }
 };
 
