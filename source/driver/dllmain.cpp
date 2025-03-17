@@ -4,15 +4,53 @@
 
 using namespace vr;
 
+class HeadDisplay : public ITrackedDeviceServerDriver {
+    EVRInitError Activate(uint32_t unObjectId) {
+        return VRInitError_None;
+    }
+
+    void Deactivate() {
+
+    }
+
+    void EnterStandby() {
+
+    }
+
+    void* GetComponent(const char* pchComponentNameAndVersion) {
+        if (!_stricmp(pchComponentNameAndVersion, vr::IVRVirtualDisplay_Version)) {
+            return NULL;
+        }
+
+        if (!_stricmp(pchComponentNameAndVersion, vr::IVRCameraComponent_Version)) {
+            return NULL;
+        }
+
+        return nullptr;
+    }
+
+    void DebugRequest(const char* pchRequest, char* pchResponseBuffer, uint32_t unResponseBufferSize) {
+
+    }
+
+    DriverPose_t GetPose() { //legacy
+        DriverPose_t t;
+        return t;
+    }
+};
+
 class MyServerTrackedDeviceProvider : public IServerTrackedDeviceProvider {
+    HeadDisplay* headDisplay;
+
     EVRInitError Init(IVRDriverContext* pDriverContext) {
         VR_INIT_SERVER_DRIVER_CONTEXT(pDriverContext);
-        vr::VRServerDriverHost()->TrackedDeviceAdded("HEAD_DISPLAY", vr::TrackedDeviceClass_HMD, NULL);
+        headDisplay = new HeadDisplay();
+        vr::VRServerDriverHost()->TrackedDeviceAdded("HEAD_DISPLAY", vr::TrackedDeviceClass_HMD, headDisplay);
         return VRInitError_None;
     }
 
     void Cleanup() {
-
+        delete headDisplay;
     }
 
     const char* const* GetInterfaceVersions() {
