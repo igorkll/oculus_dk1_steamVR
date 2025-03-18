@@ -1,8 +1,11 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
 #include "pch.h"
 #include <openvr_driver.h>
+#include <thread>
+#include <atomic>
 
 using namespace vr;
+using namespace std;
 
 #define VR_WIDTH 1280
 #define VR_HEIGHT 720
@@ -67,18 +70,36 @@ class VRDisplay : public IVRDisplayComponent {
 };
 
 class HeadDisplay : public ITrackedDeviceServerDriver {
-public:
+private:
     VRDisplay* vrDisplay;
+    thread th;
+    atomic<bool> isActive;
+    atomic<uint32_t> deviceIndex;
 
+    void threadFunc() {
+        while (isActive)
+        {
+            VRServerDriverHost()->TrackedDevicePoseUpdated(deviceIndex, GetPose(), sizeof(DriverPose_t));
+            this_thread::sleep_for(chrono::milliseconds(5));
+        }
+    }
+
+public:
     HeadDisplay() {
         vrDisplay = new VRDisplay();
     }
 
     EVRInitError Activate(uint32_t unObjectId) {
+        isActive = true;
+        deviceIndex = unObjectId;
+        th = thread(&HeadDisplay::threadFunc, this);
         return VRInitError_None;
     }
 
     void Deactivate() {
+        if (isActive.exchange(false)) {
+            th.join();
+        }
     }
 
     void EnterStandby() {
@@ -86,12 +107,8 @@ public:
     }
 
     void* GetComponent(const char* pchComponentNameAndVersion) {
-        if (!_stricmp(pchComponentNameAndVersion, IVRVirtualDisplay_Version)) {
+        if (strcmp(pchComponentNameAndVersion, IVRDisplayComponent_Version) == 0) {
             return vrDisplay;
-        }
-
-        if (!_stricmp(pchComponentNameAndVersion, IVRCameraComponent_Version)) {
-            return NULL;
         }
 
         return nullptr;
