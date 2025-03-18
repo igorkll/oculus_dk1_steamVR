@@ -16,11 +16,11 @@ class VRDisplay : public IVRDisplayComponent {
     }
 
     bool IsDisplayOnDesktop() {
-        return false;
+        return true;
     }
 
     bool IsDisplayRealDisplay() {
-        return true;
+        return false;
     }
 
     void GetRecommendedRenderTargetSize(uint32_t* pnWidth, uint32_t* pnHeight) {
@@ -52,15 +52,12 @@ class VRDisplay : public IVRDisplayComponent {
 
     DistortionCoordinates_t ComputeDistortion(EVREye eEye, float fU, float fV) {
         DistortionCoordinates_t distortionCoordinates_t;
-        distortionCoordinates_t.rfRed[0] = 0;
-        distortionCoordinates_t.rfRed[1] = 1;
-
-        distortionCoordinates_t.rfGreen[0] = 0;
-        distortionCoordinates_t.rfGreen[1] = 1;
-
-        distortionCoordinates_t.rfBlue[0] = 0;
-        distortionCoordinates_t.rfBlue[1] = 1;
-
+        distortionCoordinates_t.rfBlue[0] = fU;
+        distortionCoordinates_t.rfBlue[1] = fV;
+        distortionCoordinates_t.rfGreen[0] = fU;
+        distortionCoordinates_t.rfGreen[1] = fV;
+        distortionCoordinates_t.rfRed[0] = fU;
+        distortionCoordinates_t.rfRed[1] = fV;
         return distortionCoordinates_t;
     }
 
@@ -70,15 +67,21 @@ class VRDisplay : public IVRDisplayComponent {
 };
 
 class HeadDisplay : public ITrackedDeviceServerDriver {
+public:
     VRDisplay* vrDisplay;
 
-    EVRInitError Activate(uint32_t unObjectId) {
+    HeadDisplay() {
         vrDisplay = new VRDisplay();
+    }
+
+    EVRInitError Activate(uint32_t unObjectId) {
+        PropertyContainerHandle_t container = VRProperties()->TrackedDeviceToPropertyContainer(unObjectId);
+        VRProperties()->SetStringProperty(container, Prop_ModelNumber_String, "oculus devkit 1");
+
         return VRInitError_None;
     }
 
     void Deactivate() {
-        delete vrDisplay;
     }
 
     void EnterStandby() {
@@ -86,11 +89,11 @@ class HeadDisplay : public ITrackedDeviceServerDriver {
     }
 
     void* GetComponent(const char* pchComponentNameAndVersion) {
-        if (!_stricmp(pchComponentNameAndVersion, vr::IVRVirtualDisplay_Version)) {
+        if (!_stricmp(pchComponentNameAndVersion, IVRVirtualDisplay_Version)) {
             return vrDisplay;
         }
 
-        if (!_stricmp(pchComponentNameAndVersion, vr::IVRCameraComponent_Version)) {
+        if (!_stricmp(pchComponentNameAndVersion, IVRCameraComponent_Version)) {
             return NULL;
         }
 
@@ -113,7 +116,7 @@ class MyServerTrackedDeviceProvider : public IServerTrackedDeviceProvider {
     EVRInitError Init(IVRDriverContext* pDriverContext) {
         VR_INIT_SERVER_DRIVER_CONTEXT(pDriverContext);
         headDisplay = new HeadDisplay();
-        vr::VRServerDriverHost()->TrackedDeviceAdded("HEAD_DISPLAY", vr::TrackedDeviceClass_HMD, headDisplay);
+        VRServerDriverHost()->TrackedDeviceAdded("HEAD_DISPLAY", TrackedDeviceClass_HMD, headDisplay);
         return VRInitError_None;
     }
 
