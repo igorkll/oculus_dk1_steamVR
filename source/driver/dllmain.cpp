@@ -105,19 +105,22 @@ class VRDisplay : public IVRDisplayComponent {
     }
     
     void GetProjectionRaw(EVREye eEye, float* pfLeft, float* pfRight, float* pfTop, float* pfBottom) {
+        double horfov = tan((horizontalFOV / 2) * (M_PI / 180.0));
+        double verfov = horfov * (((double)(EYE_HEIGHT)) / ((double)(EYE_WIDTH)));
+
         if (eEye == Eye_Left)
         {
-            *pfLeft = -1.0f;
-            *pfRight = 1.0f;
-            *pfTop = -1.0f;
-            *pfBottom = 1.0f;
+            *pfLeft = -horfov;
+            *pfRight = horfov;
+            *pfTop = -verfov;
+            *pfBottom = verfov;
         }
         else
         {
-            *pfLeft = -1.0f;
-            *pfRight = 1.0f;
-            *pfTop = -1.0f;
-            *pfBottom = 1.0f;
+            *pfLeft = -horfov;
+            *pfRight = horfov;
+            *pfTop = -verfov;
+            *pfBottom = verfov;
         }
     }
 
