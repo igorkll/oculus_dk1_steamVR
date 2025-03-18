@@ -231,8 +231,33 @@ private:
     }
 
     void threadFunc() {
-        while (isActive)
-        {
+        while (isActive) {
+            BYTE dataReceived[1024] = { 0 };
+            DWORD bytesRead;
+            WriteFile(HID, "ASD", 3, &bytesRead, NULL);
+            if (ReadFile(HID, dataReceived, sizeof(dataReceived), &bytesRead, NULL)) {
+                for (size_t i = 0; i < dataReceived[0]; i++) {
+                    ShowMessageBox(L"%i/%i %i", i, dataReceived[0], dataReceived[i]);
+                }
+                ShowMessageBox(L"END");
+            } else {
+                char* buffer = nullptr;
+                FormatMessageA(
+                    FORMAT_MESSAGE_FROM_SYSTEM |
+                    FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                    FORMAT_MESSAGE_IGNORE_INSERTS,
+                    nullptr,
+                    GetLastError(),
+                    NULL,
+                    reinterpret_cast<char*>(&buffer),
+                    0,
+                    nullptr
+                );
+
+                MessageBoxA(NULL, buffer, "", MB_OK | MB_ICONERROR);
+                LocalFree(buffer);
+            }
+
             VRServerDriverHost()->TrackedDevicePoseUpdated(deviceIndex, GetPose(), sizeof(DriverPose_t));
             this_thread::sleep_for(chrono::milliseconds(5));
         }
@@ -282,19 +307,7 @@ public:
             pchResponseBuffer[0] = 0;
     }
 
-    size_t i = 0;
     DriverPose_t GetPose() {
-        BYTE dataReceived[1024] = {0};
-        DWORD bytesRead;
-        if (HidD_GetInputReport(HID, dataReceived, sizeof(dataReceived))) {
-            for (size_t i = 0; i < dataReceived[0]; i++) {
-                ShowMessageBox(L"%i/%i %i", i, dataReceived[0], dataReceived[i]);
-            }
-            ShowMessageBox(L"END");
-        } else {
-            ShowMessageBox(L"%i", GetLastError());
-        }
-
         DriverPose_t pose = { 0 };
 
         pose.qWorldFromDriverRotation.w = 1.f;
@@ -303,15 +316,13 @@ public:
         pose.qRotation.w = 1.f;
 
         pose.vecPosition[0] = 0.0f;
-        pose.vecPosition[1] = sin(i * 0.01) * 0.1f + 1.0f;
+        pose.vecPosition[1] = 0.0f;
         pose.vecPosition[2] = 0.0f;
 
         pose.poseIsValid = true;
         pose.deviceIsConnected = true;
         pose.result = TrackingResult_Running_OK;
         pose.shouldApplyHeadModel = true;
-
-        i++;
         return pose;
     }
 };
