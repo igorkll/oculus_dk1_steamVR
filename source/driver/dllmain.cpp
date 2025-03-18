@@ -5,8 +5,6 @@
 #include <atomic>
 #include <cwchar>
 #include <cmath>
-#include <OVR_CAPI.h>
-#include <OVR_ErrorCode.h>
 
 using namespace vr;
 using namespace std;
@@ -163,7 +161,6 @@ private:
     thread th;
     atomic<bool> isActive;
     atomic<uint32_t> deviceIndex;
-    ovrSession ovr_session;
 
     void threadFunc() {
         while (isActive)
@@ -171,23 +168,6 @@ private:
             VRServerDriverHost()->TrackedDevicePoseUpdated(deviceIndex, GetPose(), sizeof(DriverPose_t));
             this_thread::sleep_for(chrono::milliseconds(5));
         }
-
-        MessageBoxA(NULL, ovr_Initialize(nullptr) == ovrSuccess ? "OK" : "ERR", "", 0);
-     
-        ovrGraphicsLuid luid;
-        ovrResult result = ovr_Create(&ovr_session, &luid);
-
-        if (OVR_SUCCESS(result)) {
-            while (isActive)
-            {
-                VRServerDriverHost()->TrackedDevicePoseUpdated(deviceIndex, GetPose(), sizeof(DriverPose_t));
-                this_thread::sleep_for(chrono::milliseconds(5));
-            }
-
-            ovr_Destroy(ovr_session);
-        }
-
-        ovr_Shutdown();
     }
 
 public:
@@ -313,9 +293,6 @@ void* HmdDriverFactory(const char* pInterfaceName, int* pReturnCode)
     return NULL;
 }
 
-extern "C" {
-    void OVR_CUSTOM_SET_DLLPATH(const wchar_t* path);
-}
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
@@ -323,21 +300,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 {
     switch (ul_reason_for_call)
     {
-    case DLL_PROCESS_ATTACH: {
-        wchar_t path[MAX_PATH];
-        GetModuleFileNameW(hModule, path, MAX_PATH);
-        std::wstring dllPath(path);
-
-        size_t pos = dllPath.find_last_of(L"\\/");
-        if (pos != std::wstring::npos)
-        {
-            dllPath = dllPath.substr(0, pos);
-        }
-
-        dllPath += L"\\LibOVRRT64_1.dll";
-        OVR_CUSTOM_SET_DLLPATH(dllPath.c_str());
-        break;
-    }
+    case DLL_PROCESS_ATTACH:
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
     case DLL_PROCESS_DETACH:
