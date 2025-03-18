@@ -27,8 +27,10 @@ using namespace std;
 #define EYE_WIDTH VR_WIDTH / 2
 #define EYE_HEIGHT VR_HEIGHT
 
-#define VENDOR_ID 0x2833
-#define PRODUCT_ID 0x0001
+//#define VENDOR_ID 0x2833
+//#define PRODUCT_ID 0x0001
+#define VENDOR_ID 0x18F8
+#define PRODUCT_ID 0x0F97
 
 bool IsRiftDKMonitor(const MONITORINFOEX& monitorInfo) {
     return (wcscmp(monitorInfo.szDevice, L"Rift DK") == 0);
@@ -217,6 +219,7 @@ private:
                     if (attributes.VendorID == VENDOR_ID && attributes.ProductID == PRODUCT_ID) {
                         HID = deviceHandle;
                         free(deviceInterfaceDetailData);
+                        ShowMessageBox(L"HID FINDED");
                         break;
                     }
 
@@ -234,8 +237,7 @@ private:
         while (isActive) {
             BYTE dataReceived[1024] = { 0 };
             DWORD bytesRead;
-            WriteFile(HID, "ASD", 3, &bytesRead, NULL);
-            if (ReadFile(HID, dataReceived, sizeof(dataReceived), &bytesRead, NULL)) {
+            if (HidD_GetInputReport(HID, dataReceived, sizeof(dataReceived))) {
                 for (size_t i = 0; i < dataReceived[0]; i++) {
                     ShowMessageBox(L"%i/%i %i", i, dataReceived[0], dataReceived[i]);
                 }
