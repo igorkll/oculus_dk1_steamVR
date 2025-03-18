@@ -27,7 +27,7 @@ class VRDisplay : public IVRDisplayComponent {
     }
 
     void GetRecommendedRenderTargetSize(uint32_t* pnWidth, uint32_t* pnHeight) {
-        *pnWidth = VR_WIDTH;
+        *pnWidth = VR_WIDTH / 2;
         *pnHeight = VR_HEIGHT;
     }
 
@@ -71,7 +71,7 @@ class VRDisplay : public IVRDisplayComponent {
 
 class HeadDisplay : public ITrackedDeviceServerDriver {
 private:
-    VRDisplay* vrDisplay;
+    VRDisplay vrDisplay;
     thread th;
     atomic<bool> isActive;
     atomic<uint32_t> deviceIndex;
@@ -87,8 +87,7 @@ private:
 public:
     HeadDisplay() {
         isActive = false;
-        deviceIndex = 0;
-        vrDisplay = new VRDisplay();
+        deviceIndex = k_unTrackedDeviceIndexInvalid;
     }
 
     EVRInitError Activate(uint32_t unObjectId) {
@@ -112,7 +111,7 @@ public:
 
     void* GetComponent(const char* pchComponentNameAndVersion) {
         if (strcmp(pchComponentNameAndVersion, IVRDisplayComponent_Version) == 0) {
-            return vrDisplay;
+            return &vrDisplay;
         }
 
         return nullptr;
