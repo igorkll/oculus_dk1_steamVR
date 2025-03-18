@@ -127,7 +127,7 @@ class VRDisplay : public IVRDisplayComponent {
     DistortionCoordinates_t ComputeDistortion(EVREye eEye, float fU, float fV) {
         DistortionCoordinates_t distortionCoordinates_t;
 
-        double destortionFactor = 1.2;
+        double destortionFactor = 1.1;
 
         float rU;
         float rV = (fV * destortionFactor) - ((destortionFactor - 1.0) / 2);
