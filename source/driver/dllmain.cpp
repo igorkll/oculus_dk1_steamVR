@@ -73,7 +73,7 @@ class HeadDisplay : public ITrackedDeviceServerDriver {
 private:
     VRDisplay* vrDisplay;
     thread th;
-    atomic<bool> isActive = false;
+    atomic<bool> isActive;
     atomic<uint32_t> deviceIndex;
 
     void threadFunc() {
@@ -86,38 +86,14 @@ private:
 
 public:
     HeadDisplay() {
+        isActive = false;
+        deviceIndex = 0;
         vrDisplay = new VRDisplay();
     }
 
     EVRInitError Activate(uint32_t unObjectId) {
         isActive = true;
         deviceIndex = unObjectId;
-
-        vr::PropertyContainerHandle_t container = vr::VRProperties()->TrackedDeviceToPropertyContainer(deviceIndex);
-
-        // Let's begin setting up the properties now we've got our container.
-        // A list of properties available is contained in vr::ETrackedDeviceProperty.
-
-        // Next, display settings
-
-        // Get the ipd of the user from SteamVR settings
-        const float ipd = vr::VRSettings()->GetFloat(vr::k_pch_SteamVR_Section, vr::k_pch_SteamVR_IPD_Float);
-        vr::VRProperties()->SetFloatProperty(container, vr::Prop_UserIpdMeters_Float, ipd);
-
-        // For HMDs, it's required that a refresh rate is set otherwise VRCompositor will fail to start.
-        vr::VRProperties()->SetFloatProperty(container, vr::Prop_DisplayFrequency_Float, 0.f);
-
-        // The distance from the user's eyes to the display in meters. This is used for reprojection.
-        vr::VRProperties()->SetFloatProperty(container, vr::Prop_UserHeadToEyeDepthMeters_Float, 0.f);
-
-        // How long from the compositor to submit a frame to the time it takes to display it on the screen.
-        vr::VRProperties()->SetFloatProperty(container, vr::Prop_SecondsFromVsyncToPhotons_Float, 0.11f);
-
-        // avoid "not fullscreen" warnings from vrmonitor
-        vr::VRProperties()->SetBoolProperty(container, vr::Prop_IsOnDesktop_Bool, false);
-
-        vr::VRProperties()->SetBoolProperty(container, vr::Prop_DisplayDebugMode_Bool, true);
-
         th = thread(&HeadDisplay::threadFunc, this);
         return VRInitError_None;
     }
@@ -126,6 +102,8 @@ public:
         if (isActive.exchange(false)) {
             th.join();
         }
+
+        deviceIndex = k_unTrackedDeviceIndexInvalid;
     }
 
     void EnterStandby() {
@@ -145,9 +123,23 @@ public:
             pchResponseBuffer[0] = 0;
     }
 
-    DriverPose_t GetPose() { //legacy
-        DriverPose_t t;
-        return t;
+    DriverPose_t GetPose() {
+        DriverPose_t pose = { 0 };
+
+        pose.qWorldFromDriverRotation.w = 1.f;
+        pose.qDriverFromHeadRotation.w = 1.f;
+
+        pose.qRotation.w = 1.f;
+
+        pose.vecPosition[0] = 0.0f;
+        pose.vecPosition[1] = sin(0 * 0.01) * 0.1f + 1.0f;
+        pose.vecPosition[2] = 0.0f;
+
+        pose.poseIsValid = true;
+        pose.deviceIsConnected = true;
+        pose.result = TrackingResult_Running_OK;
+        pose.shouldApplyHeadModel = true;
+        return pose;
     }
 };
 
