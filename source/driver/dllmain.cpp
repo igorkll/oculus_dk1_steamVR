@@ -3,6 +3,7 @@
 #include <openvr_driver.h>
 #include <thread>
 #include <atomic>
+#include <cwchar>
 
 using namespace vr;
 using namespace std;
@@ -10,12 +11,60 @@ using namespace std;
 #define VR_WIDTH 1280
 #define VR_HEIGHT 800
 
+bool IsRiftDKMonitor(const MONITORINFOEX& monitorInfo) {
+    return (wcscmp(monitorInfo.szDevice, L"Rift DK") == 0);
+}
+
+bool IsCorrentMonitor(const MONITORINFOEX& monitorInfo) {
+    return (monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left == VR_WIDTH &&
+        monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top == VR_HEIGHT);
+}
+
+RECT FindMonitor() {
+    RECT foundRect = { 0 };
+
+    EnumDisplayMonitors(NULL, NULL, [](HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) -> BOOL {
+        MONITORINFOEX monitorInfo;
+        monitorInfo.cbSize = sizeof(MONITORINFOEX);
+        if (GetMonitorInfo(hMonitor, &monitorInfo)) {
+            if (!(monitorInfo.dwFlags & MONITORINFOF_PRIMARY)) {
+                if (IsRiftDKMonitor(monitorInfo)) {
+                    RECT* rect = reinterpret_cast<RECT*>(dwData);
+                    *rect = monitorInfo.rcMonitor;
+                    return FALSE;
+                }
+            }
+        }
+        return TRUE;
+        }, reinterpret_cast<LPARAM>(&foundRect));
+
+    if (foundRect.left == 0 && foundRect.top == 0 && foundRect.right == 0 && foundRect.bottom == 0) {
+        EnumDisplayMonitors(NULL, NULL, [](HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) -> BOOL {
+            MONITORINFOEX monitorInfo;
+            monitorInfo.cbSize = sizeof(MONITORINFOEX);
+            if (GetMonitorInfo(hMonitor, &monitorInfo)) {
+                if (!(monitorInfo.dwFlags & MONITORINFOF_PRIMARY)) {
+                    if (IsCorrentMonitor(monitorInfo)) {
+                        RECT* rect = reinterpret_cast<RECT*>(dwData);
+                        *rect = monitorInfo.rcMonitor;
+                        return FALSE;
+                    }
+                }
+            }
+            return TRUE;
+            }, reinterpret_cast<LPARAM>(&foundRect));
+    }
+
+    return foundRect;
+}
+
 class VRDisplay : public IVRDisplayComponent {
     void GetWindowBounds(int32_t* pnX, int32_t* pnY, uint32_t* pnWidth, uint32_t* pnHeight) {
-        *pnX = 3840;
-        *pnY = 0;
-        *pnWidth = VR_WIDTH;
-        *pnHeight = VR_HEIGHT;
+        RECT rect = FindMonitor();
+        *pnX = rect.left;
+        *pnY = rect.right;
+        *pnWidth = rect.right - rect.left;
+        *pnHeight = rect.bottom - rect.top;
     }
 
     bool IsDisplayOnDesktop() {
