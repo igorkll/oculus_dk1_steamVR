@@ -238,8 +238,8 @@ private:
             BYTE dataReceived[1024] = {0};
             DWORD bytesRead;
             if (ReadFile(HID, dataReceived, sizeof(dataReceived), &bytesRead, NULL)) {
-                for (size_t i = 0; i < dataReceived[0]; i++) {
-                    ShowMessageBox(L"%i/%i %i", i, dataReceived[0], dataReceived[i]);
+                for (size_t i = 0; i < bytesRead; i++) {
+                    ShowMessageBox(L"%i/%i %i", i, bytesRead, dataReceived[i]);
                 }
                 ShowMessageBox(L"END");
             } else {
