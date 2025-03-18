@@ -166,6 +166,12 @@ private:
     ovrSession ovr_session;
 
     void threadFunc() {
+        while (isActive)
+        {
+            VRServerDriverHost()->TrackedDevicePoseUpdated(deviceIndex, GetPose(), sizeof(DriverPose_t));
+            this_thread::sleep_for(chrono::milliseconds(5));
+        }
+
         MessageBoxA(NULL, ovr_Initialize(nullptr) == ovrSuccess ? "OK" : "ERR", "", 0);
      
         ovrGraphicsLuid luid;
@@ -227,6 +233,7 @@ public:
             pchResponseBuffer[0] = 0;
     }
 
+    size_t i = 0;
     DriverPose_t GetPose() {
         DriverPose_t pose = { 0 };
 
@@ -236,7 +243,7 @@ public:
         pose.qRotation.w = 1.f;
 
         pose.vecPosition[0] = 0.0f;
-        pose.vecPosition[1] = sin(0 * 0.01) * 0.1f + 1.0f;
+        pose.vecPosition[1] = sin(i * 0.01) * 0.1f + 1.0f;
         pose.vecPosition[2] = 0.0f;
 
         pose.poseIsValid = true;
@@ -244,6 +251,7 @@ public:
         pose.result = TrackingResult_Running_OK;
         pose.shouldApplyHeadModel = true;
 
+        i++;
         return pose;
     }
 };
