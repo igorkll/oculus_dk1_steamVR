@@ -1,11 +1,11 @@
 {
-	"alwaysActivate": true,
+	"alwaysActivate": false,
 	"name" : "oculus_dk1_steamVR",
 	"directory" : "",
 	"resourceOnly" : false,
 
 	"hmd_presence" :
 	[
-		"*.*"
+		"2833.*"
 	]
 }

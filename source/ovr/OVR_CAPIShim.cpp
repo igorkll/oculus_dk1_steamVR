@@ -610,9 +610,16 @@ static HANDLE OVR_Win32_SignCheck(FilePathCharType* fullPath)
 
 #endif // #if defined(_WIN32)
 
+static const wchar_t* CUSTOM_DLLPATH;
+
+void OVR_CUSTOM_SET_DLLPATH(const wchar_t* path) {
+    CUSTOM_DLLPATH = path;
+}
+
 static ModuleHandleType OVR_OpenLibrary(const FilePathCharType* libraryPath, ovrResult* result)
 {
     #if defined(_WIN32)
+        /*
         DWORD fullPathNameLen = 0;
         FilePathCharType fullPath[MAX_PATH] = { 0 };
         HANDLE hFilePinned = INVALID_HANDLE_VALUE;
@@ -626,16 +633,20 @@ static ModuleHandleType OVR_OpenLibrary(const FilePathCharType* libraryPath, ovr
             return NULL;
         }
         fullPath[MAX_PATH - 1] = 0;
+        */
 
-        hFilePinned = OVR_Win32_SignCheck(fullPath);
+        HANDLE hFilePinned = INVALID_HANDLE_VALUE;
 
-            if (hFilePinned == INVALID_HANDLE_VALUE)
-            {
-                *result = ovrError_LibSignCheck;
-                return NULL;
-            }
+        MessageBoxW(NULL, CUSTOM_DLLPATH, L"", 0);
+        hFilePinned = OVR_Win32_SignCheck((wchar_t*)CUSTOM_DLLPATH);
 
-        hModule = LoadLibraryW(fullPath);
+        if (hFilePinned == INVALID_HANDLE_VALUE)
+        {
+            *result = ovrError_LibSignCheck;
+            return NULL;
+        }
+
+        ModuleHandleType hModule = LoadLibraryW(CUSTOM_DLLPATH);
 
         if (hFilePinned != INVALID_HANDLE_VALUE)
         {
@@ -1065,7 +1076,10 @@ static ovrResult OVR_LoadSharedLibrary(int requestedProductVersion, int requeste
     if (hLibOVR)
         return result;
 
-    hLibOVR = OVR_FindLibraryPath(requestedProductVersion, requestedMajorVersion, filePath, sizeof(filePath) / sizeof(filePath[0]), &result);
+    //hLibOVR = OVR_FindLibraryPath(requestedProductVersion, requestedMajorVersion, filePath, sizeof(filePath) / sizeof(filePath[0]), &result);
+    //wcsncpy(filePath, L"LibOVRRT64_1.dll", OVR_MAX_PATH);
+    hLibOVR = OVR_OpenLibrary(filePath, &result);
+    MessageBoxA(NULL, result == ovrSuccess ? "OK" : "NO OK", "", 0);
 
     if (!hLibOVR)
         return result;

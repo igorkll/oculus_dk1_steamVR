@@ -165,7 +165,9 @@ private:
     ovrSession ovr_session;
 
     void threadFunc() {
-        ovr_Initialize(nullptr);
+        char buff[16];
+        _itoa_s(ovr_Initialize(nullptr), buff, 10);
+        MessageBoxA(NULL, buff, "", 0);
      
         ovrGraphicsLuid luid;
         ovrResult result = ovr_Create(&ovr_session, &luid);
@@ -304,6 +306,7 @@ void* HmdDriverFactory(const char* pInterfaceName, int* pReturnCode)
     return NULL;
 }
 
+void OVR_CUSTOM_SET_DLLPATH(const wchar_t* path);
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
@@ -311,7 +314,21 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 {
     switch (ul_reason_for_call)
     {
-    case DLL_PROCESS_ATTACH:
+    case DLL_PROCESS_ATTACH: {
+        wchar_t path[MAX_PATH];
+        GetModuleFileNameW(hModule, path, MAX_PATH);
+        std::wstring dllPath(path);
+
+        size_t pos = dllPath.find_last_of(L"\\/");
+        if (pos != std::wstring::npos)
+        {
+            dllPath = dllPath.substr(0, pos);
+        }
+
+        dllPath += L"\\LibOVRRT64_1.dll";
+        OVR_CUSTOM_SET_DLLPATH(dllPath.c_str());
+        break;
+    }
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
     case DLL_PROCESS_DETACH:
