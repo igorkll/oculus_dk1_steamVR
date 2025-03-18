@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cwchar>
 #include <cmath>
+#include <OVR_CAPI.h>
 
 using namespace vr;
 using namespace std;
@@ -161,13 +162,25 @@ private:
     thread th;
     atomic<bool> isActive;
     atomic<uint32_t> deviceIndex;
+    ovrSession ovr_session;
 
     void threadFunc() {
-        while (isActive)
-        {
-            VRServerDriverHost()->TrackedDevicePoseUpdated(deviceIndex, GetPose(), sizeof(DriverPose_t));
-            this_thread::sleep_for(chrono::milliseconds(5));
+        ovr_Initialize(nullptr);
+     
+        ovrGraphicsLuid luid;
+        ovrResult result = ovr_Create(&ovr_session, &luid);
+
+        if (OVR_SUCCESS(result)) {
+            while (isActive)
+            {
+                VRServerDriverHost()->TrackedDevicePoseUpdated(deviceIndex, GetPose(), sizeof(DriverPose_t));
+                this_thread::sleep_for(chrono::milliseconds(5));
+            }
+
+            ovr_Destroy(ovr_session);
         }
+
+        ovr_Shutdown();
     }
 
 public:
@@ -229,6 +242,7 @@ public:
         pose.deviceIsConnected = true;
         pose.result = TrackingResult_Running_OK;
         pose.shouldApplyHeadModel = true;
+
         return pose;
     }
 };
