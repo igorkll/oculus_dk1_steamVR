@@ -4,12 +4,21 @@
 #include <thread>
 #include <atomic>
 #include <cwchar>
+#include <cmath>
 
 using namespace vr;
 using namespace std;
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 #define VR_WIDTH 1280
 #define VR_HEIGHT 800
+#define horizontalFOV 90
+
+#define EYE_WIDTH VR_WIDTH / 2
+#define EYE_HEIGHT VR_HEIGHT
 
 bool IsRiftDKMonitor(const MONITORINFOEX& monitorInfo) {
     return (wcscmp(monitorInfo.szDevice, L"Rift DK") == 0);
@@ -76,14 +85,14 @@ class VRDisplay : public IVRDisplayComponent {
     }
 
     void GetRecommendedRenderTargetSize(uint32_t* pnWidth, uint32_t* pnHeight) {
-        *pnWidth = VR_WIDTH / 2;
-        *pnHeight = VR_HEIGHT;
+        *pnWidth = EYE_WIDTH;
+        *pnHeight = EYE_HEIGHT;
     }
 
     void GetEyeOutputViewport(EVREye eEye, uint32_t* pnX, uint32_t* pnY, uint32_t* pnWidth, uint32_t* pnHeight) {
         *pnY = 0;
-        *pnWidth = VR_WIDTH / 2;
-        *pnHeight = VR_HEIGHT;
+        *pnWidth = EYE_WIDTH;
+        *pnHeight = EYE_HEIGHT;
 
         if (eEye == Eye_Left)
         {
@@ -91,15 +100,25 @@ class VRDisplay : public IVRDisplayComponent {
         }
         else
         {
-            *pnX = VR_WIDTH / 2;
+            *pnX = EYE_WIDTH;
         }
     }
     
     void GetProjectionRaw(EVREye eEye, float* pfLeft, float* pfRight, float* pfTop, float* pfBottom) {
-        *pfLeft = -1.0f;
-        *pfRight = 1.0f;
-        *pfTop = -1.0f;
-        *pfBottom = 1.0f;
+        if (eEye == Eye_Left)
+        {
+            *pfLeft = -1.0f;
+            *pfRight = 1.0f;
+            *pfTop = -1.0f;
+            *pfBottom = 1.0f;
+        }
+        else
+        {
+            *pfLeft = -1.0f;
+            *pfRight = 1.0f;
+            *pfTop = -1.0f;
+            *pfBottom = 1.0f;
+        }
     }
 
     DistortionCoordinates_t ComputeDistortion(EVREye eEye, float fU, float fV) {
