@@ -15,7 +15,7 @@ bool IsRiftDKMonitor(const MONITORINFOEX& monitorInfo) {
     return (wcscmp(monitorInfo.szDevice, L"Rift DK") == 0);
 }
 
-bool IsCorrentMonitor(const MONITORINFOEX& monitorInfo) {
+bool IsCorrentResolution(const MONITORINFOEX& monitorInfo) {
     return (monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left == VR_WIDTH &&
         monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top == VR_HEIGHT);
 }
@@ -28,7 +28,7 @@ RECT FindMonitor() {
         monitorInfo.cbSize = sizeof(MONITORINFOEX);
         if (GetMonitorInfo(hMonitor, &monitorInfo)) {
             if (!(monitorInfo.dwFlags & MONITORINFOF_PRIMARY)) {
-                if (IsRiftDKMonitor(monitorInfo)) {
+                if (IsRiftDKMonitor(monitorInfo) && IsCorrentResolution(monitorInfo)) {
                     RECT* rect = reinterpret_cast<RECT*>(dwData);
                     *rect = monitorInfo.rcMonitor;
                     return FALSE;
@@ -44,7 +44,7 @@ RECT FindMonitor() {
             monitorInfo.cbSize = sizeof(MONITORINFOEX);
             if (GetMonitorInfo(hMonitor, &monitorInfo)) {
                 if (!(monitorInfo.dwFlags & MONITORINFOF_PRIMARY)) {
-                    if (IsCorrentMonitor(monitorInfo)) {
+                    if (IsCorrentResolution(monitorInfo)) {
                         RECT* rect = reinterpret_cast<RECT*>(dwData);
                         *rect = monitorInfo.rcMonitor;
                         return FALSE;
@@ -62,7 +62,7 @@ class VRDisplay : public IVRDisplayComponent {
     void GetWindowBounds(int32_t* pnX, int32_t* pnY, uint32_t* pnWidth, uint32_t* pnHeight) {
         RECT rect = FindMonitor();
         *pnX = rect.left;
-        *pnY = rect.right;
+        *pnY = rect.top;
         *pnWidth = rect.right - rect.left;
         *pnHeight = rect.bottom - rect.top;
     }
