@@ -19,11 +19,11 @@ class VRDisplay : public IVRDisplayComponent {
     }
 
     bool IsDisplayOnDesktop() {
-        return true;
+        return false;
     }
 
     bool IsDisplayRealDisplay() {
-        return false;
+        return true;
     }
 
     void GetRecommendedRenderTargetSize(uint32_t* pnWidth, uint32_t* pnHeight) {
@@ -73,7 +73,7 @@ class HeadDisplay : public ITrackedDeviceServerDriver {
 private:
     VRDisplay* vrDisplay;
     thread th;
-    atomic<bool> isActive;
+    atomic<bool> isActive = false;
     atomic<uint32_t> deviceIndex;
 
     void threadFunc() {
@@ -92,6 +92,32 @@ public:
     EVRInitError Activate(uint32_t unObjectId) {
         isActive = true;
         deviceIndex = unObjectId;
+
+        vr::PropertyContainerHandle_t container = vr::VRProperties()->TrackedDeviceToPropertyContainer(deviceIndex);
+
+        // Let's begin setting up the properties now we've got our container.
+        // A list of properties available is contained in vr::ETrackedDeviceProperty.
+
+        // Next, display settings
+
+        // Get the ipd of the user from SteamVR settings
+        const float ipd = vr::VRSettings()->GetFloat(vr::k_pch_SteamVR_Section, vr::k_pch_SteamVR_IPD_Float);
+        vr::VRProperties()->SetFloatProperty(container, vr::Prop_UserIpdMeters_Float, ipd);
+
+        // For HMDs, it's required that a refresh rate is set otherwise VRCompositor will fail to start.
+        vr::VRProperties()->SetFloatProperty(container, vr::Prop_DisplayFrequency_Float, 0.f);
+
+        // The distance from the user's eyes to the display in meters. This is used for reprojection.
+        vr::VRProperties()->SetFloatProperty(container, vr::Prop_UserHeadToEyeDepthMeters_Float, 0.f);
+
+        // How long from the compositor to submit a frame to the time it takes to display it on the screen.
+        vr::VRProperties()->SetFloatProperty(container, vr::Prop_SecondsFromVsyncToPhotons_Float, 0.11f);
+
+        // avoid "not fullscreen" warnings from vrmonitor
+        vr::VRProperties()->SetBoolProperty(container, vr::Prop_IsOnDesktop_Bool, false);
+
+        vr::VRProperties()->SetBoolProperty(container, vr::Prop_DisplayDebugMode_Bool, true);
+
         th = thread(&HeadDisplay::threadFunc, this);
         return VRInitError_None;
     }
