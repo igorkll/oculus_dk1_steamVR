@@ -75,9 +75,6 @@ public:
     }
 
     EVRInitError Activate(uint32_t unObjectId) {
-        PropertyContainerHandle_t container = VRProperties()->TrackedDeviceToPropertyContainer(unObjectId);
-        VRProperties()->SetStringProperty(container, Prop_ModelNumber_String, "oculus devkit 1");
-
         return VRInitError_None;
     }
 
@@ -101,7 +98,8 @@ public:
     }
 
     void DebugRequest(const char* pchRequest, char* pchResponseBuffer, uint32_t unResponseBufferSize) {
-
+        if (unResponseBufferSize >= 1)
+            pchResponseBuffer[0] = 0;
     }
 
     DriverPose_t GetPose() { //legacy
@@ -116,7 +114,9 @@ class MyServerTrackedDeviceProvider : public IServerTrackedDeviceProvider {
     EVRInitError Init(IVRDriverContext* pDriverContext) {
         VR_INIT_SERVER_DRIVER_CONTEXT(pDriverContext);
         headDisplay = new HeadDisplay();
-        VRServerDriverHost()->TrackedDeviceAdded("HEAD_DISPLAY", TrackedDeviceClass_HMD, headDisplay);
+        if (!VRServerDriverHost()->TrackedDeviceAdded("HEAD_DISPLAY", TrackedDeviceClass_HMD, headDisplay)) {
+            return VRInitError_Driver_Unknown;
+        }
         return VRInitError_None;
     }
 
@@ -129,7 +129,11 @@ class MyServerTrackedDeviceProvider : public IServerTrackedDeviceProvider {
     }
 
     void RunFrame() {
+        vr::VREvent_t vrevent{};
+        while (vr::VRServerDriverHost()->PollNextEvent(&vrevent, sizeof(vr::VREvent_t)))
+        {
 
+        }
     }
 
     bool ShouldBlockStandbyMode() { //legacy
