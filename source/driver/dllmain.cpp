@@ -163,8 +163,8 @@ class MyServerTrackedDeviceProvider : public IServerTrackedDeviceProvider {
     }
 
     void RunFrame() {
-        vr::VREvent_t vrevent{};
-        while (vr::VRServerDriverHost()->PollNextEvent(&vrevent, sizeof(vr::VREvent_t)))
+        VREvent_t vrevent{};
+        while (VRServerDriverHost()->PollNextEvent(&vrevent, sizeof(VREvent_t)))
         {
 
         }
