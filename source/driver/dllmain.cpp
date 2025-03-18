@@ -130,10 +130,10 @@ class VRDisplay : public IVRDisplayComponent {
         double destortionFactor = 1.2;
 
         float rU;
-        float rV = fV * destortionFactor;
+        float rV = (fV * destortionFactor) - ((destortionFactor - 1.0) / 2);
         if (eEye == Eye_Left)
         {
-            rU = (fU * destortionFactor) - (1 - destortionFactor);
+            rU = (fU * destortionFactor) - (destortionFactor - 1.0);
         }
         else
         {
