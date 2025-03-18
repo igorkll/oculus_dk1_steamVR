@@ -5,6 +5,13 @@
 #include <atomic>
 #include <cwchar>
 #include <cmath>
+#include <hidsdi.h>
+#include <setupapi.h>
+#include <iostream>
+#include <vector>
+
+#pragma comment(lib, "hid.lib")
+#pragma comment(lib, "setupapi.lib")
 
 using namespace vr;
 using namespace std;
@@ -20,6 +27,9 @@ using namespace std;
 #define EYE_WIDTH VR_WIDTH / 2
 #define EYE_HEIGHT VR_HEIGHT
 
+#define VENDOR_ID 0x2833
+#define PRODUCT_ID 0x0001
+
 bool IsRiftDKMonitor(const MONITORINFOEX& monitorInfo) {
     return (wcscmp(monitorInfo.szDevice, L"Rift DK") == 0);
 }
@@ -27,6 +37,15 @@ bool IsRiftDKMonitor(const MONITORINFOEX& monitorInfo) {
 bool IsCorrentResolution(const MONITORINFOEX& monitorInfo) {
     return (monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left == VR_WIDTH &&
         monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top == VR_HEIGHT);
+}
+
+void ShowMessageBox(const wchar_t* format, ...) {
+    wchar_t buffer[1024];
+    va_list args;
+    va_start(args, format);
+    vswprintf(buffer, sizeof(buffer) / sizeof(wchar_t), format, args);
+    va_end(args);
+    MessageBoxW(NULL, buffer, L"Сообщение", MB_OK | MB_ICONINFORMATION);
 }
 
 RECT FindMonitor() {
@@ -161,6 +180,55 @@ private:
     thread th;
     atomic<bool> isActive;
     atomic<uint32_t> deviceIndex;
+    HANDLE HID;
+
+    void findHID() {
+        GUID hidGuid;
+        HidD_GetHidGuid(&hidGuid);
+        HDEVINFO deviceInfo = SetupDiGetClassDevs(&hidGuid, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+
+        if (deviceInfo == INVALID_HANDLE_VALUE) {
+            return;
+        }
+
+        SP_DEVICE_INTERFACE_DATA deviceInterfaceData;
+        deviceInterfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
+
+        for (DWORD i = 0; SetupDiEnumDeviceInterfaces(deviceInfo, NULL, &hidGuid, i, &deviceInterfaceData); i++) {
+            DWORD requiredSize;
+            SetupDiGetDeviceInterfaceDetail(deviceInfo, &deviceInterfaceData, NULL, 0, &requiredSize, NULL);
+            PSP_DEVICE_INTERFACE_DETAIL_DATA deviceInterfaceDetailData = (PSP_DEVICE_INTERFACE_DETAIL_DATA)malloc(requiredSize);
+            deviceInterfaceDetailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+
+            if (SetupDiGetDeviceInterfaceDetail(deviceInfo, &deviceInterfaceData, deviceInterfaceDetailData, requiredSize, NULL, NULL)) {
+                HANDLE deviceHandle = CreateFile(deviceInterfaceDetailData->DevicePath,
+                    GENERIC_READ | GENERIC_WRITE,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE,
+                    NULL,
+                    OPEN_EXISTING,
+                    0,
+                    NULL);
+
+                if (deviceHandle != INVALID_HANDLE_VALUE) {
+                    HIDD_ATTRIBUTES attributes;
+                    attributes.Size = sizeof(HIDD_ATTRIBUTES);
+                    HidD_GetAttributes(deviceHandle, &attributes);
+
+                    if (attributes.VendorID == VENDOR_ID && attributes.ProductID == PRODUCT_ID) {
+                        HID = deviceHandle;
+                        free(deviceInterfaceDetailData);
+                        break;
+                    }
+
+                    CloseHandle(deviceHandle);
+                }
+            }
+
+            free(deviceInterfaceDetailData);
+        }
+
+        SetupDiDestroyDeviceInfoList(deviceInfo);
+    }
 
     void threadFunc() {
         while (isActive)
@@ -184,6 +252,7 @@ public:
         vr::VRProperties()->SetBoolProperty(container, vr::Prop_IsOnDesktop_Bool, true);
         vr::VRProperties()->SetBoolProperty(container, vr::Prop_DisplayDebugMode_Bool, false);
 
+        findHID();
         th = thread(&HeadDisplay::threadFunc, this);
         return VRInitError_None;
     }
@@ -215,6 +284,17 @@ public:
 
     size_t i = 0;
     DriverPose_t GetPose() {
+        BYTE dataReceived[1024] = {0};
+        DWORD bytesRead;
+        if (HidD_GetInputReport(HID, dataReceived, sizeof(dataReceived))) {
+            for (size_t i = 0; i < dataReceived[0]; i++) {
+                ShowMessageBox(L"%i/%i %i", i, dataReceived[0], dataReceived[i]);
+            }
+            ShowMessageBox(L"END");
+        } else {
+            ShowMessageBox(L"%i", GetLastError());
+        }
+
         DriverPose_t pose = { 0 };
 
         pose.qWorldFromDriverRotation.w = 1.f;
