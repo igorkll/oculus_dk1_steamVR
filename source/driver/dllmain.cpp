@@ -127,15 +127,17 @@ class VRDisplay : public IVRDisplayComponent {
     DistortionCoordinates_t ComputeDistortion(EVREye eEye, float fU, float fV) {
         DistortionCoordinates_t distortionCoordinates_t;
 
-        float rU = fU;
-        float rV = fV;
+        double destortionFactor = 1.2;
+
+        float rU;
+        float rV;
         if (eEye == Eye_Left)
         {
-            rU = rU * 1.2;
+            rU = fV * destortionFactor;
         }
         else
         {
-            rU = rU * 1.2;
+            rU = fV * destortionFactor;
         }
 
         distortionCoordinates_t.rfBlue[0] = rU;
