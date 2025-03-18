@@ -235,7 +235,7 @@ private:
 
     void threadFunc() {
         while (isActive) {
-            BYTE dataReceived[1024] = { 1 };
+            BYTE dataReceived[1024] = {0};
             DWORD bytesRead;
             if (ReadFile(HID, dataReceived, sizeof(dataReceived), &bytesRead, NULL)) {
                 for (size_t i = 0; i < dataReceived[0]; i++) {
