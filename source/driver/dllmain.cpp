@@ -8,22 +8,22 @@ using namespace vr;
 using namespace std;
 
 #define VR_WIDTH 1280
-#define VR_HEIGHT 720
+#define VR_HEIGHT 800
 
 class VRDisplay : public IVRDisplayComponent {
     void GetWindowBounds(int32_t* pnX, int32_t* pnY, uint32_t* pnWidth, uint32_t* pnHeight) {
-        *pnX = 0;
+        *pnX = 3840;
         *pnY = 0;
         *pnWidth = VR_WIDTH;
         *pnHeight = VR_HEIGHT;
     }
 
     bool IsDisplayOnDesktop() {
-        return false;
+        return true;
     }
 
     bool IsDisplayRealDisplay() {
-        return true;
+        return false;
     }
 
     void GetRecommendedRenderTargetSize(uint32_t* pnWidth, uint32_t* pnHeight) {
