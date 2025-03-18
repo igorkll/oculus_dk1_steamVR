@@ -183,18 +183,7 @@ class MyServerTrackedDeviceProvider : public IServerTrackedDeviceProvider {
     }
 };
 
-class MyWatchdogProvider : public IVRWatchdogProvider {
-    EVRInitError Init(IVRDriverContext* pDriverContext) {
-        return VRInitError_None;
-    }
-
-    void Cleanup() {
-
-    }
-};
-
 MyServerTrackedDeviceProvider device_provider;
-MyWatchdogProvider watchdog_provider;
 
 extern "C" __declspec(dllexport)
 void* HmdDriverFactory(const char* pInterfaceName, int* pReturnCode)
@@ -202,11 +191,6 @@ void* HmdDriverFactory(const char* pInterfaceName, int* pReturnCode)
     if (0 == strcmp(IServerTrackedDeviceProvider_Version, pInterfaceName))
     {
         return &device_provider;
-    }
-
-    if (0 == strcmp(IVRWatchdogProvider_Version, pInterfaceName))
-    {
-        return &watchdog_provider;
     }
 
     if (pReturnCode)
