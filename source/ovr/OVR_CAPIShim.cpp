@@ -610,10 +610,11 @@ static HANDLE OVR_Win32_SignCheck(FilePathCharType* fullPath)
 
 #endif // #if defined(_WIN32)
 
-static const wchar_t* CUSTOM_DLLPATH;
+static wchar_t* CUSTOM_DLLPATH;
 
 void OVR_CUSTOM_SET_DLLPATH(const wchar_t* path) {
-    CUSTOM_DLLPATH = path;
+    CUSTOM_DLLPATH = (wchar_t*)malloc((wcslen(path) * sizeof(wchar_t)) + 1);
+    wcscpy(CUSTOM_DLLPATH, path);
 }
 
 static ModuleHandleType OVR_OpenLibrary(const FilePathCharType* libraryPath, ovrResult* result)
@@ -637,7 +638,7 @@ static ModuleHandleType OVR_OpenLibrary(const FilePathCharType* libraryPath, ovr
 
         HANDLE hFilePinned = INVALID_HANDLE_VALUE;
 
-        MessageBoxW(NULL, CUSTOM_DLLPATH, L"", 0);
+        //MessageBoxW(NULL, CUSTOM_DLLPATH, L"", 0);
         hFilePinned = OVR_Win32_SignCheck((wchar_t*)CUSTOM_DLLPATH);
 
         if (hFilePinned == INVALID_HANDLE_VALUE)
@@ -1079,7 +1080,7 @@ static ovrResult OVR_LoadSharedLibrary(int requestedProductVersion, int requeste
     //hLibOVR = OVR_FindLibraryPath(requestedProductVersion, requestedMajorVersion, filePath, sizeof(filePath) / sizeof(filePath[0]), &result);
     //wcsncpy(filePath, L"LibOVRRT64_1.dll", OVR_MAX_PATH);
     hLibOVR = OVR_OpenLibrary(filePath, &result);
-    MessageBoxA(NULL, result == ovrSuccess ? "OK" : "NO OK", "", 0);
+    //MessageBoxA(NULL, result == ovrSuccess ? "OK" : "NO OK", "", 0);
 
     if (!hLibOVR)
         return result;
@@ -1171,12 +1172,14 @@ OVR_PUBLIC_FUNCTION(ovrResult) ovr_Initialize(const ovrInitParams* inputParams)
 
     // By design we ignore the build version in the library search.
     result = OVR_LoadSharedLibrary(OVR_PRODUCT_VERSION, OVR_MAJOR_VERSION);
-    if (result != ovrSuccess)
-       return result;
+    if (result != ovrSuccess) {
+        return result;
+    }
 
     result = API.ovr_Initialize.Ptr(&params);
     if (result != ovrSuccess)
         OVR_UnloadSharedLibrary();
+
 
     reportClientInfo = (ovr_ReportClientInfoType)(uintptr_t)OVR_DLSYM(hLibOVR, "ovr_ReportClientInfo");
 

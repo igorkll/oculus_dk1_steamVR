@@ -6,6 +6,7 @@
 #include <cwchar>
 #include <cmath>
 #include <OVR_CAPI.h>
+#include <OVR_ErrorCode.h>
 
 using namespace vr;
 using namespace std;
@@ -165,9 +166,7 @@ private:
     ovrSession ovr_session;
 
     void threadFunc() {
-        char buff[16];
-        _itoa_s(ovr_Initialize(nullptr), buff, 10);
-        MessageBoxA(NULL, buff, "", 0);
+        MessageBoxA(NULL, ovr_Initialize(nullptr) == ovrSuccess ? "OK" : "ERR", "", 0);
      
         ovrGraphicsLuid luid;
         ovrResult result = ovr_Create(&ovr_session, &luid);
@@ -306,7 +305,9 @@ void* HmdDriverFactory(const char* pInterfaceName, int* pReturnCode)
     return NULL;
 }
 
-void OVR_CUSTOM_SET_DLLPATH(const wchar_t* path);
+extern "C" {
+    void OVR_CUSTOM_SET_DLLPATH(const wchar_t* path);
+}
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
