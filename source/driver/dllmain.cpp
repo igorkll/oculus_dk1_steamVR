@@ -23,7 +23,7 @@ class VRDisplay : public IVRDisplayComponent {
     }
 
     bool IsDisplayRealDisplay() {
-        return false;
+        return true;
     }
 
     void GetRecommendedRenderTargetSize(uint32_t* pnWidth, uint32_t* pnHeight) {
@@ -93,6 +93,11 @@ public:
     EVRInitError Activate(uint32_t unObjectId) {
         isActive = true;
         deviceIndex = unObjectId;
+
+        vr::PropertyContainerHandle_t container = vr::VRProperties()->TrackedDeviceToPropertyContainer(unObjectId);
+        vr::VRProperties()->SetBoolProperty(container, vr::Prop_IsOnDesktop_Bool, true);
+        vr::VRProperties()->SetBoolProperty(container, vr::Prop_DisplayDebugMode_Bool, false);
+
         th = thread(&HeadDisplay::threadFunc, this);
         return VRInitError_None;
     }
