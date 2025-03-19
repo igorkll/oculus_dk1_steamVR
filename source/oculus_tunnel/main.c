@@ -3,6 +3,8 @@
 #include "stdio.h"
 #include "stdint.h"
 
+#define DEBUG
+
 typedef struct {
     byte isHMDSensorAttached;
     byte isHMDAttached;
@@ -31,6 +33,7 @@ bool (*OVR_EnableMagYawCorrection) (int sensorID, bool enable);
 void (*OVR_BeginMagAutoCalibraton) ();
 
 int main() {
+#ifndef DEBUG
     HANDLE PIPE = CreateFileA(
         "\\\\.\\pipe\\OculusPluginBinding",
         GENERIC_ALL,
@@ -59,6 +62,7 @@ int main() {
         LocalFree(buffer);
         return 0;
     }
+#endif
 
     HMODULE OculusPlugin = LoadLibraryA("OculusPlugin.dll");
     if (OculusPlugin) {
@@ -102,8 +106,10 @@ int main() {
     
     MessageList messageList = {0};
     while (true) {
-        uint8_t action;
+        uint8_t action = 1;
+#ifndef DEBUG
         ReadFile(PIPE, &action, 1, NULL, NULL);
+#endif
 
         bool exit = false;
         switch (action) {
@@ -111,11 +117,13 @@ int main() {
                 printf("REQUEST: data\n");
                 TUNNEL_DATA tunnel_data = { 0 };
                 OVR_Update(&messageList);
-                OVR_GetSensorOrientationQ(0, &tunnel_data.qw, &tunnel_data.qx, &tunnel_data.qy, &tunnel_data.qz);
+                if (!OVR_GetSensorOrientationQ(0, &tunnel_data.qw, &tunnel_data.qx, &tunnel_data.qy, &tunnel_data.qz)) {
+                    printf("ERROR: failed read sensor\n");
+                }
                 OVR_ProcessLatencyInputs();
-
                 printf("RESPONSE: %f %f %f %f\n", tunnel_data.qw, tunnel_data.qx, tunnel_data.qy, tunnel_data.qz);
 
+#ifndef DEBUG
                 WriteFile(
                     PIPE,
                     &tunnel_data,
@@ -123,6 +131,7 @@ int main() {
                     NULL,
                     NULL
                 );
+#endif
 
                 break;
             }
