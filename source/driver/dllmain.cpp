@@ -234,10 +234,22 @@ private:
 
             TUNNEL_DATA tunnel_data;
             ReadFile(pipe, &tunnel_data, sizeof(tunnel_data), NULL, NULL);
-    
-            ShowMessageBox(L"%f %f %f %f\n", tunnel_data.qw, tunnel_data.qx, tunnel_data.qy, tunnel_data.qz);
 
-            VRServerDriverHost()->TrackedDevicePoseUpdated(deviceIndex, GetPose(), sizeof(DriverPose_t));
+            DriverPose_t pose = { 0 };
+            pose.qWorldFromDriverRotation.w = 1.f;
+            pose.qDriverFromHeadRotation.w = 1.f;
+            pose.qRotation.x = tunnel_data.qx;
+            pose.qRotation.y = tunnel_data.qy;
+            pose.qRotation.z = tunnel_data.qz;
+            pose.qRotation.w = tunnel_data.qw;
+            pose.vecPosition[0] = 0.0f;
+            pose.vecPosition[1] = 1.77f + (tunnel_data.qy * 3);
+            pose.vecPosition[2] = 0.0f;
+            pose.poseIsValid = true;
+            pose.deviceIsConnected = true;
+            pose.result = TrackingResult_Running_OK;
+            pose.shouldApplyHeadModel = true;
+            VRServerDriverHost()->TrackedDevicePoseUpdated(deviceIndex, pose, sizeof(DriverPose_t));
             this_thread::sleep_for(chrono::milliseconds(5));
         }
 
