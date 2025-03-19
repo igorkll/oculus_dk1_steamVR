@@ -10,9 +10,6 @@
 #include <iostream>
 #include <vector>
 
-#pragma comment(lib, "hid.lib")
-#pragma comment(lib, "setupapi.lib")
-
 using namespace vr;
 using namespace std;
 
@@ -27,10 +24,12 @@ using namespace std;
 #define EYE_WIDTH VR_WIDTH / 2
 #define EYE_HEIGHT VR_HEIGHT
 
-//#define VENDOR_ID 0x2833
-//#define PRODUCT_ID 0x0001
-#define VENDOR_ID 0x18F8
-#define PRODUCT_ID 0x0F97
+typedef struct {
+    double qw;
+    double qx;
+    double qy;
+    double qz;
+} TUNNEL_DATA;
 
 bool IsRiftDKMonitor(const MONITORINFOEX& monitorInfo) {
     return (wcscmp(monitorInfo.szDevice, L"Rift DK") == 0);
@@ -184,81 +183,47 @@ private:
     atomic<uint32_t> deviceIndex;
     HANDLE HID;
 
-    void findHID() {
-        GUID hidGuid;
-        HidD_GetHidGuid(&hidGuid);
-        HDEVINFO deviceInfo = SetupDiGetClassDevs(&hidGuid, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+    void threadFunc() {
+        HANDLE pipe = CreateNamedPipeA(
+            "\\\\.\\pipe\\pizdopipe",
+            PIPE_ACCESS_DUPLEX,
+            PIPE_TYPE_BYTE,
+            1,
+            0,
+            0,
+            0,
+            NULL
+        );
 
-        if (deviceInfo == INVALID_HANDLE_VALUE) {
+        if (!pipe || pipe == INVALID_HANDLE_VALUE) {
+            MessageBoxA(NULL, "", "Unable to create pipe", MB_OK | MB_ICONERROR);
             return;
         }
 
-        SP_DEVICE_INTERFACE_DATA deviceInterfaceData;
-        deviceInterfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
+        if (!ConnectNamedPipe(pipe, NULL)) {
+            char* buffer = nullptr;
+            FormatMessageA(
+                FORMAT_MESSAGE_FROM_SYSTEM |
+                FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                FORMAT_MESSAGE_IGNORE_INSERTS,
+                nullptr,
+                GetLastError(),
+                NULL,
+                reinterpret_cast<char*>(&buffer),
+                0,
+                nullptr
+            );
 
-        for (DWORD i = 0; SetupDiEnumDeviceInterfaces(deviceInfo, NULL, &hidGuid, i, &deviceInterfaceData); i++) {
-            DWORD requiredSize;
-            SetupDiGetDeviceInterfaceDetail(deviceInfo, &deviceInterfaceData, NULL, 0, &requiredSize, NULL);
-            PSP_DEVICE_INTERFACE_DETAIL_DATA deviceInterfaceDetailData = (PSP_DEVICE_INTERFACE_DETAIL_DATA)malloc(requiredSize);
-            deviceInterfaceDetailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-
-            if (SetupDiGetDeviceInterfaceDetail(deviceInfo, &deviceInterfaceData, deviceInterfaceDetailData, requiredSize, NULL, NULL)) {
-                HANDLE deviceHandle = CreateFile(deviceInterfaceDetailData->DevicePath,
-                    GENERIC_READ | GENERIC_WRITE,
-                    FILE_SHARE_READ | FILE_SHARE_WRITE,
-                    NULL,
-                    OPEN_EXISTING,
-                    0,
-                    NULL);
-
-                if (deviceHandle != INVALID_HANDLE_VALUE) {
-                    HIDD_ATTRIBUTES attributes;
-                    attributes.Size = sizeof(HIDD_ATTRIBUTES);
-                    HidD_GetAttributes(deviceHandle, &attributes);
-
-                    if (attributes.VendorID == VENDOR_ID && attributes.ProductID == PRODUCT_ID) {
-                        HID = deviceHandle;
-                        free(deviceInterfaceDetailData);
-                        ShowMessageBox(L"HID FINDED");
-                        break;
-                    }
-
-                    CloseHandle(deviceHandle);
-                }
-            }
-
-            free(deviceInterfaceDetailData);
+            MessageBoxA(NULL, buffer, "Unable to connect named pipe", MB_OK | MB_ICONERROR);
+            LocalFree(buffer);
+            return;
         }
 
-        SetupDiDestroyDeviceInfoList(deviceInfo);
-    }
-
-    void threadFunc() {
         while (isActive) {
-            BYTE dataReceived[1024] = {0};
-            DWORD bytesRead;
-            if (ReadFile(HID, dataReceived, sizeof(dataReceived), &bytesRead, NULL)) {
-                for (size_t i = 0; i < bytesRead; i++) {
-                    ShowMessageBox(L"%i/%i %i", i, bytesRead, dataReceived[i]);
-                }
-                ShowMessageBox(L"END");
-            } else {
-                char* buffer = nullptr;
-                FormatMessageA(
-                    FORMAT_MESSAGE_FROM_SYSTEM |
-                    FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                    FORMAT_MESSAGE_IGNORE_INSERTS,
-                    nullptr,
-                    GetLastError(),
-                    NULL,
-                    reinterpret_cast<char*>(&buffer),
-                    0,
-                    nullptr
-                );
-
-                MessageBoxA(NULL, buffer, "", MB_OK | MB_ICONERROR);
-                LocalFree(buffer);
-            }
+            TUNNEL_DATA tunnel_data;
+            ReadFile(pipe, &tunnel_data, sizeof(tunnel_data), NULL, NULL);
+    
+            ShowMessageBox(L"%f %f %f %f\n", tunnel_data.qw, tunnel_data.qx, tunnel_data.qy, tunnel_data.qz);
 
             VRServerDriverHost()->TrackedDevicePoseUpdated(deviceIndex, GetPose(), sizeof(DriverPose_t));
             this_thread::sleep_for(chrono::milliseconds(5));
@@ -279,7 +244,6 @@ public:
         vr::VRProperties()->SetBoolProperty(container, vr::Prop_IsOnDesktop_Bool, true);
         vr::VRProperties()->SetBoolProperty(container, vr::Prop_DisplayDebugMode_Bool, false);
 
-        findHID();
         th = thread(&HeadDisplay::threadFunc, this);
         return VRInitError_None;
     }
@@ -393,7 +357,29 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 {
     switch (ul_reason_for_call)
     {
-    case DLL_PROCESS_ATTACH:
+    case DLL_PROCESS_ATTACH: {
+        char dllPath[MAX_PATH];
+        GetModuleFileNameA(hModule, dllPath, sizeof(dllPath));
+
+        std::string directory(dllPath);
+        size_t pos = directory.find_last_of("\\/");
+        if (pos != std::string::npos) {
+            directory = directory.substr(0, pos + 1);
+        }
+
+        std::string exePath = directory + "oculus_tunnel_32.exe";
+
+        STARTUPINFOA si;
+        PROCESS_INFORMATION pi;
+
+        ZeroMemory(&si, sizeof(si));
+        si.cb = sizeof(si);
+        ZeroMemory(&pi, sizeof(pi));
+
+        const char* cstr = exePath.c_str();
+        strcpy();
+    }
+
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
     case DLL_PROCESS_DETACH:
