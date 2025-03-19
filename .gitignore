@@ -1,4 +1,6 @@
 .vs
 x64
 x32
+Debug
+Release
 driver_oculus_dk1_steamVR.dll
