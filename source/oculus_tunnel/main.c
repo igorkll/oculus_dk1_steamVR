@@ -1,20 +1,24 @@
 #include "windows.h"
 #include "stdbool.h"
-
-void (*OVR_Initialize) ();
-void (*OVR_Destroy) ();
-void (*OVR_GetSensorOrientation) (double* x, double* y, double* z);
+#include "stdio.h"
 
 typedef struct {
-    double ex;
-    double ey;
-    double ez;
+    byte isHMDSensorAttached;
+    byte isHMDAttached;
+    byte isLatencyTesterAttached;
+} MessageList;
 
+typedef struct {
+    double qw;
     double qx;
     double qy;
     double qz;
-    double qw;
 } TUNNEL_DATA;
+
+bool (*OVR_Initialize) ();
+bool (*OVR_Destroy) ();
+bool (*OVR_GetSensorOrientation) (int sensorID, float* w, float* x, float* y, float* z);
+bool (*OVR_Update) (MessageList* messageList);
 
 int main() {
     HANDLE PIPE = CreateFileA(
@@ -27,7 +31,7 @@ int main() {
         NULL
     );
 
-    if (PIPE == INVALID_HANDLE_VALUE) {
+    if (PIPE == INVALID_HANDLE_VALUE && false) {
         char* buffer = NULL;
         FormatMessageA(
             FORMAT_MESSAGE_FROM_SYSTEM |
@@ -52,6 +56,7 @@ int main() {
         OVR_Initialize = (void(*)())GetProcAddress(OculusPlugin, "OVR_Initialize");
         OVR_Destroy = (void(*)())GetProcAddress(OculusPlugin, "OVR_Destroy");
         OVR_GetSensorOrientation = (void(*)())GetProcAddress(OculusPlugin, "OVR_GetSensorOrientation");
+        OVR_Update = (void(*)())GetProcAddress(OculusPlugin, "OVR_Update");
     } else {
         char* buffer = NULL;
         FormatMessageA(
@@ -74,8 +79,13 @@ int main() {
     OVR_Initialize();
     
     while (true) {
-        TUNNEL_DATA tunnel_data;
-        OVR_GetSensorOrientation(&tunnel_data.ex, &tunnel_data.ey, &tunnel_data.ez);
+        MessageList messageList = {0};
+        printf("%i\n", OVR_Update(&messageList));
+
+        TUNNEL_DATA tunnel_data = {0};
+        OVR_GetSensorOrientation(0, &tunnel_data.qw, &tunnel_data.qx, &tunnel_data.qy, &tunnel_data.qz);
+
+        printf("%f %f %f %f\n", tunnel_data.qw, tunnel_data.qx, tunnel_data.qy, tunnel_data.qz);
 
         WriteFile(
             PIPE,
