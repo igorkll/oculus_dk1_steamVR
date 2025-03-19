@@ -238,12 +238,12 @@ private:
             DriverPose_t pose = { 0 };
             pose.qWorldFromDriverRotation.w = 1.f;
             pose.qDriverFromHeadRotation.w = 1.f;
+            pose.qRotation.w = tunnel_data.qw;
             pose.qRotation.x = tunnel_data.qx;
             pose.qRotation.y = tunnel_data.qy;
             pose.qRotation.z = tunnel_data.qz;
-            pose.qRotation.w = tunnel_data.qw;
             pose.vecPosition[0] = 0.0f;
-            pose.vecPosition[1] = 1.77f + (tunnel_data.qy * 3);
+            pose.vecPosition[1] = 1.77f;
             pose.vecPosition[2] = 0.0f;
             pose.poseIsValid = true;
             pose.deviceIsConnected = true;

@@ -108,10 +108,13 @@ int main() {
         bool exit = false;
         switch (action) {
             case 1: {
+                printf("REQUEST: data\n");
                 TUNNEL_DATA tunnel_data = { 0 };
                 OVR_Update(&messageList);
                 OVR_GetSensorOrientationQ(0, &tunnel_data.qw, &tunnel_data.qx, &tunnel_data.qy, &tunnel_data.qz);
                 OVR_ProcessLatencyInputs();
+
+                printf("RESPONSE: %f %f %f %f\n", tunnel_data.qw, tunnel_data.qx, tunnel_data.qy, tunnel_data.qz);
 
                 WriteFile(
                     PIPE,
@@ -125,11 +128,13 @@ int main() {
             }
 
             case 2: {
+                printf("REQUEST: reset\n");
                 OVR_ResetSensorOrientation(0);
                 break;
             }
 
             case 3: {
+                printf("REQUEST: exit\n");
                 exit = true;
                 break;
             }
