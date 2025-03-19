@@ -23,6 +23,8 @@ int (*OVR_GetSensorCount) ();
 bool (*OVR_IsSensorPresent) (int sensorID);
 void (*OVR_ProcessLatencyInputs) ();
 bool (*OVR_ResetSensorOrientation) (int sensorID);
+bool (*OVR_SetSensorPredictionTime) (int sensorID, float predictionTime);
+bool (*OVR_EnableMagYawCorrection) (int sensorID, bool enable);
 
 int main() {
     HANDLE PIPE = CreateFileA(
@@ -65,6 +67,8 @@ int main() {
         OVR_IsSensorPresent = (void(*)())GetProcAddress(OculusPlugin, "OVR_IsSensorPresent");
         OVR_ProcessLatencyInputs = (void(*)())GetProcAddress(OculusPlugin, "OVR_ProcessLatencyInputs");
         OVR_ResetSensorOrientation = (void(*)())GetProcAddress(OculusPlugin, "OVR_ResetSensorOrientation");
+        OVR_SetSensorPredictionTime = (void(*)())GetProcAddress(OculusPlugin, "OVR_SetSensorPredictionTime");
+        OVR_EnableMagYawCorrection = (void(*)())GetProcAddress(OculusPlugin, "OVR_EnableMagYawCorrection");
     } else {
         char* buffer = NULL;
         FormatMessageA(
@@ -86,15 +90,17 @@ int main() {
 
     OVR_Initialize();
     OVR_ResetSensorOrientation(0);
+    OVR_SetSensorPredictionTime(0, 0.1);
+    OVR_EnableMagYawCorrection(0, true);
     
     MessageList messageList = {0};
     while (true) {
-        printf("%i\n", OVR_Update(&messageList));
+        //printf("%i\n", OVR_Update(&messageList));
 
         TUNNEL_DATA tunnel_data = {0};
         OVR_GetSensorOrientation(0, &tunnel_data.qw, &tunnel_data.qx, &tunnel_data.qy, &tunnel_data.qz);
 
-        printf("%f %f %f %f\n", tunnel_data.qw, tunnel_data.qx, tunnel_data.qy, tunnel_data.qz);
+        //printf("%f %f %f %f\n", tunnel_data.qw, tunnel_data.qx, tunnel_data.qy, tunnel_data.qz);
 
         OVR_ProcessLatencyInputs();
 
