@@ -9,7 +9,6 @@
 #include <setupapi.h>
 #include <iostream>
 #include <vector>
-#include <shellapi.h>
 
 using namespace vr;
 using namespace std;
@@ -203,17 +202,12 @@ private:
             return;
         }
 
-        SHELLEXECUTEINFOA sei;
-        ZeroMemory(&sei, sizeof(sei));
-        sei.cbSize = sizeof(sei);
-        sei.fMask = SEE_MASK_NOCLOSEPROCESS;
-        sei.hwnd = NULL;
-        sei.lpVerb = "runas";
-        sei.lpFile = tunnel_exe_path;
-        sei.lpParameters = NULL;
-        sei.lpDirectory = NULL;
-        sei.nShow = SW_SHOWNORMAL;
-        ShellExecuteExA(&sei);
+        STARTUPINFOA si;
+        PROCESS_INFORMATION pi;
+        ZeroMemory(&si, sizeof(si));
+        si.cb = sizeof(si);
+        ZeroMemory(&pi, sizeof(pi));
+        CreateProcessA(tunnel_exe_path, NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
 
         if (!ConnectNamedPipe(pipe, NULL)) {
             char* buffer = nullptr;
@@ -245,7 +239,7 @@ private:
             pose.qWorldFromDriverRotation.w = 1.f;
             pose.qDriverFromHeadRotation.w = 1.f;
             pose.qRotation.w = tunnel_data.qw;
-            pose.qRotation.x = tunnel_data.qx;
+            pose.qRotation.x = -tunnel_data.qx;
             pose.qRotation.y = tunnel_data.qy;
             pose.qRotation.z = tunnel_data.qz;
             pose.vecPosition[0] = 0.0f;
