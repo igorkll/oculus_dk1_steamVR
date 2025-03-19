@@ -18,6 +18,8 @@ typedef struct {
 bool (*OVR_Initialize) ();
 bool (*OVR_Destroy) ();
 bool (*OVR_GetSensorOrientation) (int sensorID, float* w, float* x, float* y, float* z);
+bool (*OVR_GetSensorOrientationQ) (int sensorID, float* w, float* x, float* y, float* z);
+bool (*OVR_GetSensorPredictedOrientation) (int sensorID, float* w, float* x, float* y, float* z);
 bool (*OVR_Update) (MessageList* messageList);
 int (*OVR_GetSensorCount) ();
 bool (*OVR_IsSensorPresent) (int sensorID);
@@ -25,6 +27,7 @@ void (*OVR_ProcessLatencyInputs) ();
 bool (*OVR_ResetSensorOrientation) (int sensorID);
 bool (*OVR_SetSensorPredictionTime) (int sensorID, float predictionTime);
 bool (*OVR_EnableMagYawCorrection) (int sensorID, bool enable);
+void (*OVR_BeginMagAutoCalibraton) ();
 
 int main() {
     HANDLE PIPE = CreateFileA(
@@ -37,7 +40,7 @@ int main() {
         NULL
     );
 
-    if (PIPE == INVALID_HANDLE_VALUE && false) {
+    if (PIPE == INVALID_HANDLE_VALUE) {
         char* buffer = NULL;
         FormatMessageA(
             FORMAT_MESSAGE_FROM_SYSTEM |
@@ -53,7 +56,6 @@ int main() {
 
         MessageBoxA(NULL, buffer, "Unable to connnect named pipe", MB_OK | MB_ICONERROR);
         LocalFree(buffer);
-
         return 0;
     }
 
@@ -62,6 +64,8 @@ int main() {
         OVR_Initialize = (void(*)())GetProcAddress(OculusPlugin, "OVR_Initialize");
         OVR_Destroy = (void(*)())GetProcAddress(OculusPlugin, "OVR_Destroy");
         OVR_GetSensorOrientation = (void(*)())GetProcAddress(OculusPlugin, "OVR_GetSensorOrientation");
+        OVR_GetSensorOrientationQ = (void(*)())GetProcAddress(OculusPlugin, "OVR_GetSensorOrientationQ");
+        OVR_GetSensorPredictedOrientation = (void(*)())GetProcAddress(OculusPlugin, "OVR_GetSensorPredictedOrientation");
         OVR_Update = (void(*)())GetProcAddress(OculusPlugin, "OVR_Update");
         OVR_GetSensorCount = (void(*)())GetProcAddress(OculusPlugin, "OVR_GetSensorCount");
         OVR_IsSensorPresent = (void(*)())GetProcAddress(OculusPlugin, "OVR_IsSensorPresent");
@@ -69,6 +73,7 @@ int main() {
         OVR_ResetSensorOrientation = (void(*)())GetProcAddress(OculusPlugin, "OVR_ResetSensorOrientation");
         OVR_SetSensorPredictionTime = (void(*)())GetProcAddress(OculusPlugin, "OVR_SetSensorPredictionTime");
         OVR_EnableMagYawCorrection = (void(*)())GetProcAddress(OculusPlugin, "OVR_EnableMagYawCorrection");
+        OVR_BeginMagAutoCalibraton = (void(*)())GetProcAddress(OculusPlugin, "OVR_EnableMagYawCorrection");
     } else {
         char* buffer = NULL;
         FormatMessageA(
@@ -90,17 +95,16 @@ int main() {
 
     OVR_Initialize();
     OVR_ResetSensorOrientation(0);
-    OVR_SetSensorPredictionTime(0, 0.1);
-    OVR_EnableMagYawCorrection(0, true);
+    //OVR_BeginMagAutoCalibraton();
+    //OVR_SetSensorPredictionTime(0, 0.1);
+    //OVR_EnableMagYawCorrection(0, true);
     
     MessageList messageList = {0};
     while (true) {
-        //printf("%i\n", OVR_Update(&messageList));
+        OVR_Update(&messageList);
 
         TUNNEL_DATA tunnel_data = {0};
-        OVR_GetSensorOrientation(0, &tunnel_data.qw, &tunnel_data.qx, &tunnel_data.qy, &tunnel_data.qz);
-
-        //printf("%f %f %f %f\n", tunnel_data.qw, tunnel_data.qx, tunnel_data.qy, tunnel_data.qz);
+        OVR_GetSensorOrientationQ(0, &tunnel_data.qw, &tunnel_data.qx, &tunnel_data.qy, &tunnel_data.qz));
 
         OVR_ProcessLatencyInputs();
 
