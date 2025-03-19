@@ -31,6 +31,8 @@ typedef struct {
     double qz;
 } TUNNEL_DATA;
 
+char* tunnel_exe_path;
+
 bool IsRiftDKMonitor(const MONITORINFOEX& monitorInfo) {
     return (wcscmp(monitorInfo.szDevice, L"Rift DK") == 0);
 }
@@ -185,7 +187,7 @@ private:
 
     void threadFunc() {
         HANDLE pipe = CreateNamedPipeA(
-            "\\\\.\\pipe\\pizdopipe",
+            "\\\\.\\pipe\\OculusPluginBinding",
             PIPE_ACCESS_DUPLEX,
             PIPE_TYPE_BYTE,
             1,
@@ -199,6 +201,13 @@ private:
             MessageBoxA(NULL, "", "Unable to create pipe", MB_OK | MB_ICONERROR);
             return;
         }
+
+        STARTUPINFOA si;
+        PROCESS_INFORMATION pi;
+        ZeroMemory(&si, sizeof(si));
+        si.cb = sizeof(si);
+        ZeroMemory(&pi, sizeof(pi));
+        CreateProcessA(tunnel_exe_path, NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
 
         if (!ConnectNamedPipe(pipe, NULL)) {
             char* buffer = nullptr;
@@ -220,6 +229,9 @@ private:
         }
 
         while (isActive) {
+            uint8_t sendByte = 1;
+            WriteFile(pipe, &sendByte, 1, NULL, NULL);
+
             TUNNEL_DATA tunnel_data;
             ReadFile(pipe, &tunnel_data, sizeof(tunnel_data), NULL, NULL);
     
@@ -228,6 +240,9 @@ private:
             VRServerDriverHost()->TrackedDevicePoseUpdated(deviceIndex, GetPose(), sizeof(DriverPose_t));
             this_thread::sleep_for(chrono::milliseconds(5));
         }
+
+        uint8_t sendByte = 0;
+        WriteFile(pipe, &sendByte, 1, NULL, NULL);
     }
 
 public:
@@ -369,15 +384,10 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 
         std::string exePath = directory + "oculus_tunnel_32.exe";
 
-        STARTUPINFOA si;
-        PROCESS_INFORMATION pi;
-
-        ZeroMemory(&si, sizeof(si));
-        si.cb = sizeof(si);
-        ZeroMemory(&pi, sizeof(pi));
-
         const char* cstr = exePath.c_str();
-        strcpy();
+        size_t cstrlen = strlen(cstr) + 1;
+        tunnel_exe_path = (char*)malloc(cstrlen);
+        memcpy(tunnel_exe_path, cstr, cstrlen);
     }
 
     case DLL_THREAD_ATTACH:
