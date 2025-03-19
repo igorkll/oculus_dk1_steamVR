@@ -214,7 +214,6 @@ private:
         sei.lpDirectory = NULL;
         sei.nShow = SW_SHOWNORMAL;
         ShellExecuteExA(&sei);
-        CloseHandle(sei.hProcess);
 
         if (!ConnectNamedPipe(pipe, NULL)) {
             char* buffer = nullptr;
