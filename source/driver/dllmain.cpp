@@ -25,10 +25,10 @@ using namespace std;
 #define EYE_HEIGHT VR_HEIGHT
 
 typedef struct {
-    double qw;
-    double qx;
-    double qy;
-    double qz;
+    float qx;
+    float qy;
+    float qz;
+    float qw;
 } TUNNEL_DATA;
 
 char* tunnel_exe_path;

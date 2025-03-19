@@ -3,7 +3,7 @@
 #include "stdio.h"
 #include "stdint.h"
 
-#define DEBUG
+//#define DEBUG
 
 typedef struct {
     byte isHMDSensorAttached;
@@ -12,17 +12,18 @@ typedef struct {
 } MessageList;
 
 typedef struct {
-    double qw;
-    double qx;
-    double qy;
-    double qz;
+    float qx;
+    float qy;
+    float qz;
+    float qw;
 } TUNNEL_DATA;
 
 bool (*OVR_Initialize) ();
 bool (*OVR_Destroy) ();
 bool (*OVR_GetSensorOrientation) (int sensorID, float* w, float* x, float* y, float* z);
-bool (*OVR_GetSensorOrientationQ) (int sensorID, float* w, float* x, float* y, float* z);
+bool (*OVR_GetSensorOrientationQ) (int sensorID, void* unknown);
 bool (*OVR_GetSensorPredictedOrientation) (int sensorID, float* w, float* x, float* y, float* z);
+bool (*OVR_GetSensorPredictedOrientationQ) (int sensorID, void* unknown);
 bool (*OVR_Update) (MessageList* messageList);
 int (*OVR_GetSensorCount) ();
 bool (*OVR_IsSensorPresent) (int sensorID);
@@ -70,6 +71,7 @@ int main() {
         OVR_Destroy = (void(*)())GetProcAddress(OculusPlugin, "OVR_Destroy");
         OVR_GetSensorOrientation = (void(*)())GetProcAddress(OculusPlugin, "OVR_GetSensorOrientation");
         OVR_GetSensorOrientationQ = (void(*)())GetProcAddress(OculusPlugin, "OVR_GetSensorOrientationQ");
+        OVR_GetSensorPredictedOrientationQ = (void(*)())GetProcAddress(OculusPlugin, "OVR_GetSensorPredictedOrientationQ");
         OVR_GetSensorPredictedOrientation = (void(*)())GetProcAddress(OculusPlugin, "OVR_GetSensorPredictedOrientation");
         OVR_Update = (void(*)())GetProcAddress(OculusPlugin, "OVR_Update");
         OVR_GetSensorCount = (void(*)())GetProcAddress(OculusPlugin, "OVR_GetSensorCount");
@@ -115,10 +117,10 @@ int main() {
         switch (action) {
             case 1: {
                 printf("REQUEST: data\n");
-                TUNNEL_DATA tunnel_data = { 0 };
                 OVR_Update(&messageList);
-                if (!OVR_GetSensorOrientationQ(0, &tunnel_data.qw, &tunnel_data.qx, &tunnel_data.qy, &tunnel_data.qz)) {
-                    printf("ERROR: failed read sensor\n");
+                TUNNEL_DATA tunnel_data;
+                if (!OVR_GetSensorOrientationQ(0, &tunnel_data)) {
+                    printf("ERROR: failed to read sensor\n");
                 }
                 OVR_ProcessLatencyInputs();
                 printf("RESPONSE: %f %f %f %f\n", tunnel_data.qw, tunnel_data.qx, tunnel_data.qy, tunnel_data.qz);
