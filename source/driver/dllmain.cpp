@@ -239,7 +239,7 @@ private:
             pose.qWorldFromDriverRotation.w = 1.f;
             pose.qDriverFromHeadRotation.w = 1.f;
             pose.qRotation.w = tunnel_data.qw;
-            pose.qRotation.x = -tunnel_data.qx;
+            pose.qRotation.x = tunnel_data.qx;
             pose.qRotation.y = tunnel_data.qy;
             pose.qRotation.z = tunnel_data.qz;
             pose.vecPosition[0] = 0.0f;
