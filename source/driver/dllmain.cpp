@@ -9,6 +9,7 @@
 #include <setupapi.h>
 #include <iostream>
 #include <vector>
+#include <shellapi.h>
 
 using namespace vr;
 using namespace std;
@@ -202,12 +203,18 @@ private:
             return;
         }
 
-        STARTUPINFOA si;
-        PROCESS_INFORMATION pi;
-        ZeroMemory(&si, sizeof(si));
-        si.cb = sizeof(si);
-        ZeroMemory(&pi, sizeof(pi));
-        CreateProcessA(tunnel_exe_path, NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+        SHELLEXECUTEINFOA sei;
+        ZeroMemory(&sei, sizeof(sei));
+        sei.cbSize = sizeof(sei);
+        sei.fMask = SEE_MASK_NOCLOSEPROCESS;
+        sei.hwnd = NULL;
+        sei.lpVerb = "runas";
+        sei.lpFile = tunnel_exe_path;
+        sei.lpParameters = NULL;
+        sei.lpDirectory = NULL;
+        sei.nShow = SW_SHOWNORMAL;
+        ShellExecuteExA(&sei);
+        CloseHandle(sei.hProcess);
 
         if (!ConnectNamedPipe(pipe, NULL)) {
             char* buffer = nullptr;
