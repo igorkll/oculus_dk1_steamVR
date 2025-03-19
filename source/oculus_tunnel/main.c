@@ -1,6 +1,7 @@
 #include "windows.h"
 #include "stdbool.h"
 #include "stdio.h"
+#include "stdint.h"
 
 typedef struct {
     byte isHMDSensorAttached;
@@ -101,20 +102,40 @@ int main() {
     
     MessageList messageList = {0};
     while (true) {
-        OVR_Update(&messageList);
+        uint8_t action;
+        ReadFile(PIPE, &action, 1, NULL, NULL);
 
-        TUNNEL_DATA tunnel_data = {0};
-        OVR_GetSensorOrientationQ(0, &tunnel_data.qw, &tunnel_data.qx, &tunnel_data.qy, &tunnel_data.qz));
+        bool exit = false;
+        switch (action) {
+            case 1: {
+                TUNNEL_DATA tunnel_data = { 0 };
+                OVR_Update(&messageList);
+                OVR_GetSensorOrientationQ(0, &tunnel_data.qw, &tunnel_data.qx, &tunnel_data.qy, &tunnel_data.qz);
+                OVR_ProcessLatencyInputs();
 
-        OVR_ProcessLatencyInputs();
+                WriteFile(
+                    PIPE,
+                    &tunnel_data,
+                    sizeof(TUNNEL_DATA),
+                    NULL,
+                    NULL
+                );
 
-        WriteFile(
-            PIPE,
-            &tunnel_data,
-            sizeof(TUNNEL_DATA),
-            NULL,
-            NULL
-        );
+                break;
+            }
+
+            case 2: {
+                OVR_ResetSensorOrientation(0);
+                break;
+            }
+
+            case 3: {
+                exit = true;
+                break;
+            }
+        }
+
+        if (exit) break;
     }
 
     OVR_Destroy();
